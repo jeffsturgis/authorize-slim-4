@@ -18,7 +18,7 @@ Slim 4 Authentication Tutorial
    - `php slim make:request (Scaffold new FormRequest Validator)`
    - `php slim make:seeder (Scaffold new database seeder)`
    - `php slim make:event (Scaffold event class)`
-   - `php slim make:listener (Scaffold event listener class)` 
+   - `php slim make:listener (Scaffold event listener class)`
 - [Global Helper Functions](https://github.com/zhorton34/authorize-slim-4#global-helper-functions)
 - [Validators](https://github.com/zhorton34/authorize-slim-4#validatorinput-rules---messages--)
 - [Mailables](https://github.com/zhorton34/authorize-slim-4/blob/master/README.md#mailables-send-emails)
@@ -28,100 +28,52 @@ Slim 4 Authentication Tutorial
 # Installation
 
 ### Dependencies
- - Vagrant
- - VirtualBox or other available vagrant virtual machine provider
+ - Debian/Ubuntu Apache
+ - Certbot
 
+1. Register or create [yourdomain]
 
-1. Clone, enter, and determine the path the application
+2. Set DNS for [yourdomain] to your server
+
+3. Clone, enter, and determine the path the application
 ```
-git clone https://github.com/zhorton34/authorize-slim-4.git
+mkdir -p /websites
 
-cd authorize-slim-4
+git clone https://github.com/jeffsturgis/ktownmow
 
-pwd
-```
+mv ktownmow [yourdomain]
 
-2. Copy output from `pwd` command (Full path to present working directory)
+cd [yourdomain]
 
-3. Open `authorize-slim-4/homestead.yaml` and update folders map path (Has comment next to it below)
-```
-ip: 192.168.10.10
-memory: 2048
-cpus: 2
-provider: virtualbox
-authorize: ~/.ssh/id_rsa.pub
-keys:
-    - ~/.ssh/id_rsa
-folders:
-    -
-       # Replace `map: /Users/zhorton/tutorials/authorize-slim-4`
-       # With `map: {the_copied_output_from_pwd_in_step_2}
-        map: /Users/zhorton/tutorials/authorize-slim-4
-        ## map Update with path you cloned the repository on your machine
-        to: /home/vagrant/code
-sites:
-    -
-        map: slim.auth
-        to: /home/vagrant/code/public
-databases:
-    - slim
-features:
-    -
-        mariadb: false
-    -
-        ohmyzsh: false
-    -
-        webdriver: false
-name: authorize-slim-4
-hostname: authorize-slim-4
 ```
 
-4. Save and close homestead.yaml
-
-5. Run `vagrant up --provision` to boot up your virtual machine
-
-6. Once booted, open up your localmachine's host file (sudo vim /etc/hosts on linux or mac)
-
-7. Add slim.auth
-
-8. Boot up the vagrant virtual
+4. `sudo vi /etc/apache/sites-enabled/110-ktownmow.com.conf` and update with your domain
 ```
-  vagrant up --provision
+<virtualhost *:80>    
+    ServerName [yourdomain]
+    DocumentRoot /websites/[yourdomain]/public
+    RewriteEngine On
+    RewriteOptions Inherit
+    <ifmodule mod_ruid2.c>
+        RMode       config
+        RUidGid     [yourlinuxuser] [yourlinuxuser]
+    </ifmodule>
+    <directory /websites/[yourdomain]/public>
+        Options -Indexes
+        Require all granted
+        Options FollowSymLinks
+        AllowOverride All
+    </directory>
+</virtualhost>
 ```
-
-9. Open your localmachines `host` file (sudo vim /etc/hosts on linux and mac)
-
-10. Add `slim.auth` and the ip defined in the homestead.yaml
- (Example below, shouldn't need to change from example)
+5. Run
 ```
-##
-# Host Database
-#
-# localhost is used to configure the loopback interface
-# when the system is booting.  Do not change this entry.
-##
-127.0.0.1	localhost
-255.255.255.255	broadcasthost
-::1             localhost
-
-###########################
-# Homestead Sites (Slim 4)
-###########################
-192.168.10.10   slim.auth
+sudo apache2ctl restart && certbot --apache -d [yourdomain]
 ```
 
-11. Close and save hosts file
-
-12. Test out `http://slim.auth/` in your browser
-(Make sure vagrant has properly finished booting from step 8)
-
-13. `cd` back into `authorize-slim-4` within your terminal
-
-14. Run `vagrant ssh`
-
-15. Once ssh'd into your virtual machine, run
+6. Run
 ```
-cd code && cp .env.example .env && composer install && npm install
+cp .env.example .env && composer install && npm install && npm audit fix
 ```
 
 ===
@@ -295,7 +247,7 @@ class ConsoleKernel extends Kernel
 
 2. Scaffold Generator Stubs (Dummy Files)
    - `resources/stubs`
-  
+
 3. Scaffold Configuration
    - `config/stubs.php`
 
@@ -325,11 +277,11 @@ class ConsoleKernel extends Kernel
  * data_get
  * data_set
  */
- 
+
  #### old($input_name)
  - Used within blade to populate old input data when form validation fails
 
-**Example** 
+**Example**
 ```
 <form>
   @csrf
@@ -343,7 +295,7 @@ class ConsoleKernel extends Kernel
 
 **Example**
 ```
-ExampleController 
+ExampleController
 {
    index()
    {
@@ -353,7 +305,7 @@ ExampleController
 ```
 
 #### event()
-- Set up events and event listeners 
+- Set up events and event listeners
 
 ```
 event()->listen('flash.success', fn ($message) => session()->flash()->add('success', $message);
@@ -361,14 +313,14 @@ event()->listen('flash.success', fn ($message) => session()->flash()->add('succe
 event()->fire('flash.success', ['Way to go, it worked!']);
 ```
 
-**Alternatively, you can use the slim scaffold to set up event and listener classes** 
+**Alternatively, you can use the slim scaffold to set up event and listener classes**
 `php slim make:event ExampleEvent`
 - creates App/Events/ExampleEvent
 `php slim make:listener ExampleListener`
 - create App/Listeners/ExampleListener
 
 **Register Class Event & Listeners in `config/events.php`**
-``` 
+```
 return [
    'events' => [
       ExampleEvent::class => [
@@ -440,7 +392,7 @@ $validation = validator($input, $rules, $messages);
 
 if ($validation->fails()) {
    session()->flash()->set('errors', $validation->errors()->getMessages());
-   
+
    return back();
 }
 
@@ -462,7 +414,7 @@ class ExampleController
    public function send(\Boot\Foundation\Mail\Mailable $mail, $response)
    {
        $user = \App\User::first();
-       
+
        $success = $mail->view('mail.auth.reset', ['url' => 'https://google.com'])
             ->to($user->email, $user->first_name)
             ->from('admin@slim.auth', 'Slim Authentication Admin')
@@ -478,7 +430,7 @@ class ExampleController
 
 ## Events (Events & associated listeners with dependency injection)
 **Example One**
-- Set up events and event listeners using the global event helper function 
+- Set up events and event listeners using the global event helper function
 _NOTE: (This example show's an easy setup, but example two is considered better architecture)_  
 
 ```
@@ -491,7 +443,7 @@ event()->fire('flash.success', [
 ]);
 ```
 
-**Example Two: Event & Listener Classes** 
+**Example Two: Event & Listener Classes**
 1. `php slim make:event UserLogin`
 2. Open `App/Events/UserLogin.php`
 3. Use the `UserLogin.php` event `__construct` to build or "construct" the event payload
@@ -532,13 +484,13 @@ class FlashWelcomeBackMessage
 {
    public function __invoke(UserLogin $event)
    {
-      $event->session->flash()->add('success', "Welcome Back {$event->user->first_name}!"); 
+      $event->session->flash()->add('success', "Welcome Back {$event->user->first_name}!");
    }
 
 }
 ```
 **Register Class Event & Listeners in `config/events.php`**
-``` 
+```
 return [
    'events' => [
       UserLogin::class => [
@@ -559,9 +511,9 @@ return [
 ```
 public function login(StoreLoginRequest $input)
 {
-  if ($input->failed()) return back(); 
+  if ($input->failed()) return back();
 
-  if (Auth::attempt($input->email, $input->password)) 
+  if (Auth::attempt($input->email, $input->password))
   {
       event()->fire(\App\Events\UserLogin::class); // Fire Event
 
@@ -578,7 +530,7 @@ public function login(StoreLoginRequest $input)
 // Example Using UserLogin Event:
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $session = app()->resolve('session');
-$different_user = \App\User::find(5); 
+$different_user = \App\User::find(5);
 
 event()->fire(UserLogin::class, [
    $session, $different_user
@@ -601,7 +553,7 @@ event()->fire('welcome-view');
 // inject blade instance with different template path than the one binded to our container
 event()->fire('welcome-view', [
     new \Jessengers\Blade\Blade(
-        base_path('vendor/package/resources/views'), 
+        base_path('vendor/package/resources/views'),
         storage_path('cache'),
     )
 ]);

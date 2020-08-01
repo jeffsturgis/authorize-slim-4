@@ -4,7 +4,7 @@ return [
     /**
      * Application name
      */
-    'name' => env('APP_NAME', 'Slim 4 Auth App'),
+    'name' => env('APP_NAME', 'KTOWN MOW'),
 
     /**
      * Application Environment
@@ -20,7 +20,7 @@ return [
     /**
      * Register App Url
      */
-    'url' => env('APP_URL', 'http://slim.auth'),
+    'url' => env('APP_URL', 'http://ktownmow.ca'),
 
     /**
      * Register Timezone
